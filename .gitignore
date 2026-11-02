@@ -19,3 +19,12 @@ logs/
 
 # Environment
 .env
+# Test cache
+.pytest_cache/
+
+# Python environments
+.env.*
+
+# Temporary files
+*.log
+.DS_Store
