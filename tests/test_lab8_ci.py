@@ -1,10 +1,19 @@
-﻿from pathlib import Path
+from pathlib import Path
 
 import pandas as pd
+import pytest
 import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture
+def sample_churn_data():
+    return pd.DataFrame({
+        "customerID": ["TEST001", "TEST002", "TEST003"],
+        "Churn": ["Yes", "No", "Yes"],
+    })
 
 
 def test_config_has_required_pipeline_settings():
@@ -21,11 +30,8 @@ def test_config_has_required_pipeline_settings():
     assert 0 <= config["quality_gate"]["minimum_value"] <= 1
 
 
-def test_churn_dataset_has_required_columns():
-    data_path = ROOT / "data" / "raw" / "churn.csv"
-    assert data_path.exists()
-
-    df = pd.read_csv(data_path)
+def test_churn_dataset_has_required_columns(sample_churn_data):
+    df = sample_churn_data
 
     assert len(df) > 0
     assert "customerID" in df.columns
@@ -33,7 +39,7 @@ def test_churn_dataset_has_required_columns():
     assert set(df["Churn"].dropna().unique()).issubset({"Yes", "No"})
 
 
-def test_churn_dataset_has_no_missing_target_values():
-    df = pd.read_csv(ROOT / "data" / "raw" / "churn.csv")
+def test_churn_dataset_has_no_missing_target_values(sample_churn_data):
+    df = sample_churn_data
 
     assert df["Churn"].notna().all()

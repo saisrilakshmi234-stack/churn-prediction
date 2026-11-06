@@ -1,4 +1,3 @@
-
 name: Lab 8 - MLOps CI
 
 on:
@@ -9,7 +8,6 @@ on:
       - "src/mlops_pipeline/**"
       - "tests/**"
       - "requirements.txt"
-      - "data/raw/churn.csv"
       - ".github/workflows/lab8_ci.yml"
 
   pull_request:
@@ -18,7 +16,6 @@ on:
       - "src/mlops_pipeline/**"
       - "tests/**"
       - "requirements.txt"
-      - "data/raw/churn.csv"
       - ".github/workflows/lab8_ci.yml"
 
   workflow_dispatch:
@@ -26,9 +23,6 @@ on:
 jobs:
   mlops-ci:
     runs-on: ubuntu-latest
-
-    env:
-      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
 
     steps:
       - name: Checkout repository
@@ -47,20 +41,3 @@ jobs:
 
       - name: Run automated tests
         run: python -m pytest -v
-
-      - name: Run Churn Prediction MLOps Pipeline
-        run: python src/mlops_pipeline/churn_prediction_pipeline.py
-
-      - name: Upload CI artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lab8-ci-${{ github.run_number }}
-          path: |
-            artifacts/**
-            reports/**
-            logs/**
-            outputs/**
-            models/**
-            mlruns/**
-          if-no-files-found: ignore

@@ -5,7 +5,7 @@ from starlette.testclient import TestClient
 from api.main import app
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client():
     with TestClient(app) as client:
         yield client
