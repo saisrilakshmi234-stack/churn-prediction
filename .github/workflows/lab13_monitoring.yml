@@ -1,0 +1,42 @@
+name: Lab 13 - End-to-End MLOps
+
+on:
+  workflow_dispatch:
+
+jobs:
+  mlops-monitoring:
+    runs-on: [self-hosted, Windows, X64]
+
+    steps:
+      - name: Verify project directory
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          Write-Host "Project directory verified"
+          Write-Host "Current directory: $(Get-Location)"
+
+      - name: Verify Python environment
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          if (!(Test-Path ".\.venv\Scripts\python.exe")) {
+              throw "Python virtual environment not found."
+          }
+          & ".\.venv\Scripts\python.exe" --version
+
+      - name: Verify ingestion report
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          if (Test-Path ".\outputs\monitoring\ingestion_report.json") {
+              Get-Content ".\outputs\monitoring\ingestion_report.json"
+          } else {
+              throw "Ingestion report not found."
+          }
+
+      - name: Check Kubernetes availability
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          kubectl get deployment churn-api
+          kubectl get pods

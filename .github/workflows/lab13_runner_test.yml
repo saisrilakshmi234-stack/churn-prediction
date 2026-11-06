@@ -1,0 +1,53 @@
+name: Lab 13 - Self Hosted Runner Test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test-runner:
+    runs-on: [self-hosted, Windows, X64]
+
+    steps:
+      - name: Verify Project Directory
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          Write-Host "Project directory: $(Get-Location)"
+          if (!(Test-Path ".\.venv\Scripts\python.exe")) {
+              throw "Project virtual environment not found."
+          }
+
+      - name: Check Python
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          & ".\.venv\Scripts\python.exe" --version
+
+      - name: Check Git
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          git --version
+
+      - name: Check Docker
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          docker info
+
+      - name: Check Kubernetes
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          kubectl get nodes
+
+      - name: Check Project
+        shell: powershell
+        run: |
+          Set-Location "C:\Users\KALYANI\OneDrive\Desktop\churn_prediction"
+          Write-Host "Runner: $env:RUNNER_NAME"
+          Write-Host "Workspace: $env:GITHUB_WORKSPACE"
+          Write-Host "Project exists: $(Test-Path ".")"

@@ -28,3 +28,15 @@ logs/
 # Temporary files
 *.log
 .DS_Store
+# Lab 13 customer data protection
+backups/
+data/archive/
+
+# Lab 13 customer data protection
+data/raw/*.csv
+data/monitoring/
+data/processed/test_customer_ids.csv
+data/processed/updated_training_data.csv
+# Processed customer datasets and model input arrays
+data/processed/*.csv
+data/processed/*.npy
