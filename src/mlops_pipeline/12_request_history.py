@@ -1,10 +1,12 @@
-import json
+﻿import json
 from pathlib import Path
 
 import pandas as pd
 
 
 LOG_PATH = Path("logs/inference/inference_log.jsonl")
+PRODUCTION_MODEL = "Telco_Churn_Production_Model"
+CI_MODEL = "CI_Test_Model"
 
 
 def load_history():
@@ -18,19 +20,40 @@ def load_history():
         raise ValueError("Inference history is empty")
 
     df = pd.DataFrame(records)
-    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+
+    required = {"request_id", "timestamp", "status", "model_name"}
+    missing = required - set(df.columns)
+
+    if missing:
+        raise ValueError(f"Missing required log columns: {sorted(missing)}")
+
+    df["timestamp"] = pd.to_datetime(
+        df["timestamp"], utc=True, errors="coerce"
+    )
 
     return df
 
 
-def show_summary(df):
-    print("\n" + "=" * 60)
-    print("REQUEST-RESPONSE HISTORY")
-    print("=" * 60)
+def mask_request_id(value):
+    if pd.isna(value):
+        return "N/A"
 
-    print(f"\nTotal records : {len(df)}")
+    value = str(value)
+    return value[:4] + "..." if len(value) > 4 else "****"
 
-    print("\nRecent requests:")
+
+def show_group(df, title):
+    print("\n" + "=" * 65)
+    print(title)
+    print("=" * 65)
+
+    if df.empty:
+        print("No requests found.")
+        return
+
+    print(f"Total requests: {len(df)}")
+    print(f"Successful: {(df['status'] == 'success').sum()}")
+    print(f"Failed: {(df['status'] == 'failure').sum()}")
 
     columns = [
         "request_id",
@@ -42,55 +65,58 @@ def show_summary(df):
         "model_version",
     ]
 
-    print(df[columns].tail(10).to_string(index=False))
+    available = [col for col in columns if col in df.columns]
+    recent = df.sort_values("timestamp", na_position="last").tail(10).copy()
+
+    recent["request_id"] = recent["request_id"].apply(mask_request_id)
+
+    print("\nLatest requests (maximum 10):")
+    print(recent[available].to_string(index=False))
 
 
-def find_request(df, request_id):
-    result = df[df["request_id"] == request_id]
-
-    if result.empty:
-        print(f"\nRequest not found: {request_id}")
-        return
-
-    print("\n" + "=" * 60)
-    print("REQUEST DETAILS")
-    print("=" * 60)
-
-    print(result.to_string(index=False))
-
-
-def show_failures(df):
+def show_production_failures(df):
     failures = df[df["status"] == "failure"]
 
-    print("\n" + "=" * 60)
-    print("FAILED REQUESTS")
-    print("=" * 60)
+    print("\n" + "=" * 65)
+    print("PRODUCTION FAILED REQUESTS")
+    print("=" * 65)
 
     if failures.empty:
-        print("\nNo failed requests.")
-    else:
-        print(f"\nFailed requests: {len(failures)}")
-        print(
-            failures[
-                [
-                    "request_id",
-                    "timestamp",
-                    "status",
-                    "error",
-                    "model_version",
-                ]
-            ].to_string(index=False)
-        )
+        print("No failed Production requests.")
+        return
+
+    print(f"Failed Production requests: {len(failures)}")
+
+    columns = ["request_id", "timestamp", "status", "model_version"]
+    available = [col for col in columns if col in failures.columns]
+
+    failures = failures.copy()
+    failures["request_id"] = failures["request_id"].apply(mask_request_id)
+
+    print(failures[available].to_string(index=False))
+    print("Raw error messages and customer inputs are hidden.")
 
 
 def main():
     df = load_history()
 
-    show_summary(df)
-    show_failures(df)
+    production = df[df["model_name"] == PRODUCTION_MODEL].copy()
+    ci = df[df["model_name"] == CI_MODEL].copy()
 
-    request_id = df["request_id"].iloc[0]
-    find_request(df, request_id)
+    other = df[
+        ~df["model_name"].isin([PRODUCTION_MODEL, CI_MODEL])
+    ].copy()
+
+    print("\nREQUEST HISTORY - PRODUCTION AND CI SEPARATED")
+    print(f"Total log records: {len(df)}")
+
+    show_group(production, "PRODUCTION REQUEST HISTORY")
+    show_production_failures(production)
+
+    show_group(ci, "CI TEST REQUEST HISTORY")
+
+    if not other.empty:
+        print(f"\nOther model records excluded: {len(other)}")
 
 
 if __name__ == "__main__":
